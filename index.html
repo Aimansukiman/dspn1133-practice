@@ -321,6 +321,7 @@ ol.subs li.done::before{background:var(--good);border-color:var(--good)}
 .qa-send p{margin:0;font-size:14.5px}
 .qa-sendbtn{justify-self:start;font-weight:600;font-size:15px;background:var(--good);color:#fff;padding:11px 20px;border-radius:999px;text-decoration:none}
 .qa-sent{color:var(--good)}
+.qa-sendbtn.done{background:none;color:var(--good);border:1px solid var(--good);cursor:default}
 .gate{position:fixed;inset:0;z-index:100;background:rgba(251,251,249,.94);display:grid;place-items:center;padding:16px}
 .gate-card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:26px 28px;display:grid;gap:12px;width:min(440px,100%);box-shadow:0 24px 60px -30px rgba(0,0,0,.35)}
 .gate-card h2{margin:0;font-family:var(--body);font-weight:600;font-size:26px}
@@ -595,7 +596,6 @@ function titleBlock(g,dark,mode){
   if(mode=="render"){
     t(X,y0+180,8,"PETUNJUK",700);
     [["BANGUNAN","#ffffff"],["LOT / TAMAN","#DDE6BE"],["KAWASAN LAPANG","#C8D8A8"],["JALAN","#E6E6E1"],["POKOK","#7F9C61"]].forEach(([n,c],k)=>{const y=y0+190+k*16;el("rect",{x:X,y,width:16,height:10,fill:c,stroke:ink,"stroke-width":.5},g);t(X+24,y+8,7,n)});
-    LEG=null;
   }else{
     t(X,y0+178,8,"PETUNJUK",700);
     const cx=[X,X+18,X+92,X+110,X+134],hy=y0+184;
@@ -1217,7 +1217,7 @@ function answer(c,s,o,replay){const [,opts,ok,why]=PQ[c][s],key=c+"-"+s;
   $("#qa-why").innerHTML=`<b>${good?"Correct.":"Not quite."}</b> ${why}`;
   const last=li>=LIST.length-1;$("#qa-next").hidden=false;$("#qa-next").textContent=last?"Finish":"Next video →";if(last)window.TUT_DONE=true;
   const secEnd=s==CH[c].steps.length-1,sd=$("#qa-send");
-  if(secEnd&&WHO){const x=secResult(c);$("#qa-send-t").innerHTML=`<b>${CH[c].name} done: ${x.r} of ${x.n} correct.</b> Send your result so your lecturer can see it.`;$("#qa-sendbtn").href=sendHref(c);$("#qa-sendbtn").textContent="Send my result to my lecturer";delete $("#qa-sendbtn").dataset.mode;$("#qa-sent").hidden=!LS("sent-"+c);sd.hidden=false;$("#qa-sendbtn").focus({preventScroll:true})}else{sd.hidden=true;$("#qa-next").focus({preventScroll:true})}}
+  if(secEnd&&WHO){const x=secResult(c);$("#qa-send-t").innerHTML=`<b>${CH[c].name} done: ${x.r} of ${x.n} correct.</b> Send your result so your lecturer can see it.`;{const b=$("#qa-sendbtn"),done=LS("sent-"+c)===x.code;b.href=sendHref(c);delete b.dataset.mode;b.classList.toggle("done",done);b.textContent=done?"Sent ✓":"Send my result to my lecturer";$("#qa-sent").textContent="Sent. Your lecturer has your result.";$("#qa-sent").hidden=!done}sd.hidden=false;$("#qa-sendbtn").focus({preventScroll:true})}else{sd.hidden=true;$("#qa-next").focus({preventScroll:true})}}
 async function start(c,s,keepGo){
   const my=++runId;ch=c;si=s;li=LIST.findIndex(x=>x[0]==c&&x[1]==s);hideQ();progress();
   $$(".win").forEach((w,i)=>w.classList.toggle("on",i==CH[c].win));
@@ -1247,10 +1247,11 @@ $("#play").onclick=()=>{go=!go;updPlay()};
 $("#next").onclick=()=>next();$("#prev").onclick=()=>prev();$("#again").onclick=()=>start(ch,si);$("#qa-next").onclick=()=>next();
 $("#speed").onclick=()=>{speed=speed==1?1.6:speed==1.6?.7:1;$("#speed").textContent=speed+"×"};
 $("#qa-sendbtn").addEventListener("click",e=>{const b=$("#qa-sendbtn");
-  if(b.dataset.mode=="link"){LS("sent-"+ch,true);$("#qa-sent").textContent='Sent. A tab opened saying "Your response has been recorded". You can close it.';setTimeout(()=>$("#qa-sent").hidden=false,300);return}
+  if(b.classList.contains("done")){e.preventDefault();return}const code=secResult(ch).code;
+  if(b.dataset.mode=="link"){LS("sent-"+ch,code);b.classList.add("done");$("#qa-sent").textContent='Sent. A tab opened saying "Your response has been recorded". You can close it.';setTimeout(()=>$("#qa-sent").hidden=false,300);return}
   e.preventDefault();const u=new URL(b.href);u.searchParams.delete("submit");b.textContent="Sending…";
   fetch(FORM,{method:"POST",mode:"no-cors",headers:{"Content-Type":"application/x-www-form-urlencoded"},body:u.searchParams.toString()})
-  .then(()=>{LS("sent-"+ch,true);b.textContent="Send again";$("#qa-sent").textContent="Sent. Your lecturer has your result.";$("#qa-sent").hidden=false})
+  .then(()=>{LS("sent-"+ch,code);b.classList.add("done");b.textContent="Sent ✓";$("#qa-sent").textContent="Sent. Your lecturer has your result.";$("#qa-sent").hidden=false})
   .catch(()=>{b.dataset.mode="link";b.textContent="Tap here to send";$("#qa-sent").textContent="Could not send from this page. Tap the button again. A tab will open saying \"Your response has been recorded\".";$("#qa-sent").hidden=false})});
 $("#g-go").onclick=gateGo;$("#g-matric").addEventListener("keydown",e=>{if(e.key=="Enter")gateGo()});$("#who").onclick=()=>gate(true);
 addEventListener("keydown",e=>{if(e.target.closest&&e.target.closest("input,textarea"))return;if(!$("#gate").hidden)return;
