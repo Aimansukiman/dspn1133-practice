@@ -1218,7 +1218,7 @@ function answer(c,s,o,replay){const [,opts,ok,why]=PQ[c][s],key=c+"-"+s;
   $("#qa-why").innerHTML=`<b>${good?"Correct.":"Not quite."}</b> ${why}`;
   const last=li>=LIST.length-1;$("#qa-next").hidden=false;$("#qa-next").textContent=last?"Finish":"Next video →";if(last)window.TUT_DONE=true;
   const secEnd=s==CH[c].steps.length-1,sd=$("#qa-send");
-  if(secEnd&&WHO){const x=secResult(c);$("#qa-send-t").innerHTML=`<b>${CH[c].name} done: ${x.r} of ${x.n} correct.</b> Send your result so your lecturer can see it.`;$("#qa-sendbtn").href=sendHref(c);$("#qa-sent").hidden=!LS("sent-"+c);sd.hidden=false;$("#qa-sendbtn").focus({preventScroll:true})}else{sd.hidden=true;$("#qa-next").focus({preventScroll:true})}}
+  if(secEnd&&WHO){const x=secResult(c);$("#qa-send-t").innerHTML=`<b>${CH[c].name} done: ${x.r} of ${x.n} correct.</b> Send your result so your lecturer can see it.`;$("#qa-sendbtn").href=sendHref(c);$("#qa-sendbtn").textContent="Send my result to my lecturer";delete $("#qa-sendbtn").dataset.mode;$("#qa-sent").hidden=!LS("sent-"+c);sd.hidden=false;$("#qa-sendbtn").focus({preventScroll:true})}else{sd.hidden=true;$("#qa-next").focus({preventScroll:true})}}
 async function start(c,s,keepGo){
   const my=++runId;ch=c;si=s;li=LIST.findIndex(x=>x[0]==c&&x[1]==s);hideQ();progress();
   $$(".win").forEach((w,i)=>w.classList.toggle("on",i==CH[c].win));
@@ -1247,7 +1247,12 @@ $$("#chs button").forEach(b=>b.onclick=()=>start(+b.dataset.c,0));
 $("#play").onclick=()=>{go=!go;updPlay()};
 $("#next").onclick=()=>next();$("#prev").onclick=()=>prev();$("#again").onclick=()=>start(ch,si);$("#qa-next").onclick=()=>next();
 $("#speed").onclick=()=>{speed=speed==1?1.6:speed==1.6?.7:1;$("#speed").textContent=speed+"×"};
-$("#qa-sendbtn").addEventListener("click",()=>{LS("sent-"+ch,true);setTimeout(()=>$("#qa-sent").hidden=false,300)});
+$("#qa-sendbtn").addEventListener("click",e=>{const b=$("#qa-sendbtn");
+  if(b.dataset.mode=="link"){LS("sent-"+ch,true);$("#qa-sent").textContent='Sent. A tab opened saying "Your response has been recorded". You can close it.';setTimeout(()=>$("#qa-sent").hidden=false,300);return}
+  e.preventDefault();const u=new URL(b.href);u.searchParams.delete("submit");b.textContent="Sending…";
+  fetch(FORM,{method:"POST",mode:"no-cors",headers:{"Content-Type":"application/x-www-form-urlencoded"},body:u.searchParams.toString()})
+  .then(()=>{LS("sent-"+ch,true);b.textContent="Send again";$("#qa-sent").textContent="Sent. Your lecturer has your result.";$("#qa-sent").hidden=false})
+  .catch(()=>{b.dataset.mode="link";b.textContent="Tap here to send";$("#qa-sent").textContent="Could not send from this page. Tap the button again. A tab will open saying \"Your response has been recorded\".";$("#qa-sent").hidden=false})});
 $("#g-go").onclick=gateGo;$("#g-matric").addEventListener("keydown",e=>{if(e.key=="Enter")gateGo()});$("#who").onclick=()=>gate(true);
 addEventListener("keydown",e=>{if(e.target.closest&&e.target.closest("input,textarea"))return;if(!$("#gate").hidden)return;
   if(!$("#qa").hidden&&/^[1-4]$/.test(e.key)){const b=$$("#qa-opts button")[+e.key-1];if(b&&!b.disabled)b.click();return}
